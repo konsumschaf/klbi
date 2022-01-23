@@ -95,6 +95,11 @@ config = {
         'WonderSwan' : 'wonderswan',
     },
 }
+config["debug"] = config["351elec"].copy()
+config["debug"].update({
+    'rom_path' : '/tmp/klbi',
+    'log_path' : '/tmp/klib/logs',
+    })
 
 metadata_dict = {
     'Title' : 'name',
@@ -109,6 +114,7 @@ metadata_dict = {
 
 # Set the correct OS
 OS = '351elec'
+#OS = 'debug'
 os_config = config[OS]
 
 # Logging
@@ -123,6 +129,7 @@ class Logger:
         self.file_handle = open(f'{self.dir}/{self.file}',"w")
 
     def log(self, text: str) -> None:
+        print(f'{self.script_basename}: {text}')
         self.file_handle.write(f'{self.script_basename}: {text}\n')
 
     def __del__(self):
@@ -166,21 +173,23 @@ for lb_xml_file in lb_xml_files:
 
         # Check if system is known
         if system not in os_config:
-            logger.log(f'Unknown system {system}, skipping')
+            logger.log(f'  Unknown system {system}, skipping')
             continue
 
-        # Open systems gamelist.xml
+        # Open systems gamelist.xml or create one if missing
         gamelist_path = f'{os_config["rom_path"]}/{os_config[system]}/gamelist.xml'
         if os.path.exists(gamelist_path):
             es_tree = ET.parse(gamelist_path)
             es_root = es_tree.getroot()
         else:
-            es_root = ET.Element("gameList")
+            es_root = ET.Element('gameList')
+            es_tree = ET.ElementTree(element = es_root)
 
         # Generate list of all games in gamelist.xml
         exisiting_games_list = []
-        for existing_game in es_root.findall('game/path'):
-            exisiting_games_list.append(existing_game.text)
+        if es_root.find('game'):
+            for existing_game in es_root.findall('game/path'):
+                exisiting_games_list.append(existing_game.text)
 
         for games in lb_root.findall('Game'):
             rom_source_path = games.find("ApplicationPath").text
@@ -191,14 +200,16 @@ for lb_xml_file in lb_xml_files:
             # Check if this ROM is already on the system
             rom_full_target_path = f'{os_config["rom_path"]}/{os_config[system]}/{rom_name}'
             if not os.path.exists(rom_full_target_path):
-                # Check if this ROM is already in the gamelist.xml
-                if f'./{rom_name}' not in exisiting_games_list:
-                    # Check if the source file exists
-                    if os.path.exists(rom_source_full_path):
-                        # Move the ROM over to the correct folder
-                        logger.log(f'Adding new game {rom_name}')
-                        shutil.move(rom_source_full_path, rom_full_target_path)
+                # Check if the source file exists
+                if os.path.exists(rom_source_full_path):
+                    # Move the ROM over to the correct folder
+                    logger.log(f'  Adding new game {rom_name}')
+                    # if the rom folder does not exist, create it
+                    os.makedirs(os.path.dirname(rom_full_target_path), exist_ok=True)
+                    shutil.move(rom_source_full_path, rom_full_target_path)
 
+                    # Check if this ROM is already in the gamelist.xml
+                    if f'./{rom_name}' not in exisiting_games_list:
                         writefile = True
 
                         # Add new Game to xml
@@ -216,7 +227,8 @@ for lb_xml_file in lb_xml_files:
                             'AndroidBoxFrontFullPath' : {'target_xml' : 'image', 'target_suffix' : 'image'},
                             'AndroidBoxFrontThumbPath' : {'target_xml' : 'thumbnail', 'target_suffix' : 'thumb'},
                             'AndroidBackgroundPath' : {'target_xml' : 'boxback', 'target_suffix' : 'boxback'},
-                            'AndroidGameTitleScreenshotPath' : {'target_xml' : 'titleshot', 'target_suffix' : 'titleshot'}
+                            'AndroidGameTitleScreenshotPath' : {'target_xml' : 'titleshot', 'target_suffix' : 'titleshot'},
+                            'AndroidClearLogoFullPath' : {'target_xml' : 'marquee', 'target_suffix' : 'marquee'}
                         }
                         for source_xml in image_dict:
                             if (image_file := games.find(source_xml)) is not None:
@@ -231,16 +243,33 @@ for lb_xml_file in lb_xml_files:
                                     shutil.move(image_source, image_target)
                                     ET.SubElement(newGame, image_dict[source_xml]["target_xml"]).text = f'./{short_image_path}'
                                 else:
-                                    logger.log(f'Skipping image {image_file} file {image_source} does not exist')
+                                    logger.log(f'  Skipping image {image_file} file {image_source} does not exist')
+
+                        # Add the video
+                        if (video_file := games.find("AndroidGameplayScreenshotPath")) is not None:
+                            video_file = video_file.text
+                            # Really a video?
+                            if pathlib.PurePath(video_file).parts[0] == 'Videos':
+                                video_extension = pathlib.Path(video_file).suffix
+                                short_video_path = f'videos/{rom_stem}-video{video_extension}'
+                                video_source = f'{os_config["rom_path"]}/LaunchBox/{video_file}'
+                                video_target = f'{os_config["rom_path"]}/{os_config[system]}/{short_video_path}'
+                                # if the video folder does not exist, create it
+                                os.makedirs(os.path.dirname(video_target), exist_ok=True)
+                                if os.path.exists(video_source):
+                                    shutil.move(video_source, video_target)
+                                    ET.SubElement(newGame, "video").text = f'./{short_video_path}'
+                                else:
+                                    logger.log(f'  Skipping image {video_file} file {video_source} does not exist')
                     else:
-                        logger.log(f'Skipping {rom_name} source file {rom_source_full_path} does not exist')
+                        logger.log(f'  Skipping {rom_name} entry, already in gamelist.xml')
                 else:
-                    logger.log(f'Skipping {rom_name} entry, already in gamelist.xml')
+                    logger.log(f'  Skipping {rom_name} source file {rom_source_full_path} does not exist')
             else:
-                logger.log(f'Skipping {rom_name}, games already exits')
+                logger.log(f'  Skipping {rom_name}, game already exits')
 
         if writefile:
-            logger.log("Writing new gamelist.xml")
+            logger.log("  Writing new gamelist.xml")
             # Format the xml output nicely
             # not in python3.8 :-(
             # ET.indent(es_root, space="\t", level=0)
