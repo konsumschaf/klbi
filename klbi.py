@@ -3,6 +3,7 @@
 # Konsumschaf's LaunchBox Importer
 #
 
+from dataclasses import dataclass
 import os
 import pathlib
 import shutil
@@ -98,7 +99,7 @@ config = {
 config["debug"] = config["351elec"].copy()
 config["debug"].update({
     'rom_path' : '/tmp/klbi',
-    'log_path' : '/tmp/klib/logs',
+    'log_path' : '/tmp/klbi/logs',
     })
 
 metadata_dict = {
@@ -112,18 +113,29 @@ metadata_dict = {
     'PlayTime' : 'gametime',
 }
 
-# Set the correct OS
-OS = '351elec'
-#OS = 'debug'
-os_config = config[OS]
+# Guess the device we are running on
+def get_os():
+    # set "debug" as default
+    current_os = "debug"
+    # 351elec
+    os_config_file = '/etc/os-release'
+    if os.path.isfile(os_config_file):
+        with open(os_config_file, encoding="utf-8") as f:
+            name = f.readline().strip()
+            if name == 'NAME="351ELEC"':
+                current_os = "351elec"
+
+    return current_os
 
 # Logging
+@dataclass
 class Logger:
-    dir = os_config['log_path']
-    file = os_config['log_file']
+    dir: str
+    file: str
+
     script_basename = os.path.basename(__file__)
 
-    def __init__(self):
+    def __post_init__(self):
         if not os.path.isdir(self.dir):
             os.makedirs(self.dir)
         self.file_handle = open(f'{self.dir}/{self.file}',"w")
@@ -134,6 +146,8 @@ class Logger:
 
     def __del__(self):
         self.file_handle.close()
+
+
 
 # Python 3.8 does not know about prettyprint xml, so this is a workaround:
 def indent(elem, level=0):
@@ -151,8 +165,16 @@ def indent(elem, level=0):
         if level and (not elem.tail or not elem.tail.strip()):
             elem.tail = i
 
+
+
+# Set the correct OS
+current_os = get_os()
+os_config = config[current_os]
+
 # Open the logfile
-logger = Logger()
+logger = Logger(dir = os_config['log_path'], file = os_config['log_file'])
+
+logger.log(f'OS: {current_os}')
 
 if not os.path.exists(f'{os_config["rom_path"]}/LaunchBox'):
     logger.log("No LaunchBox folder found, aborting")
@@ -169,12 +191,18 @@ for lb_xml_file in lb_xml_files:
         lb_root = lb_tree.getroot()
 
         system = lb_root.find("./Platform/Name").text
-        logger.log(f'Processing system: {system}')
+        logger.log(f'Processing system: "{system}"')
 
         # Check if system is known
         if system not in os_config:
-            logger.log(f'  Unknown system {system}, skipping')
-            continue
+            logger.log(f'  Unknown system "{system}", trying Scrap-As-Fallback')
+            scrape_as = lb_root.find("./Platform/ScrapeAs").text
+            if scrape_as not in os_config:
+                logger.log(f'  Scrape-As-System: "{scrape_as}" not found, skipping')
+                continue
+            else:
+                system = scrape_as
+                logger.log(f'  Known Scrape-As-System: "{scrape_as}" found, use it as system')
 
         # Open systems gamelist.xml or create one if missing
         gamelist_path = f'{os_config["rom_path"]}/{os_config[system]}/gamelist.xml'
@@ -203,7 +231,7 @@ for lb_xml_file in lb_xml_files:
                 # Check if the source file exists
                 if os.path.exists(rom_source_full_path):
                     # Move the ROM over to the correct folder
-                    logger.log(f'  Adding new game {rom_name}')
+                    logger.log(f'  Adding new game "{rom_name}"')
                     # if the rom folder does not exist, create it
                     os.makedirs(os.path.dirname(rom_full_target_path), exist_ok=True)
                     shutil.move(rom_source_full_path, rom_full_target_path)
@@ -243,7 +271,7 @@ for lb_xml_file in lb_xml_files:
                                     shutil.move(image_source, image_target)
                                     ET.SubElement(newGame, image_dict[source_xml]["target_xml"]).text = f'./{short_image_path}'
                                 else:
-                                    logger.log(f'  Skipping image {image_file} file {image_source} does not exist')
+                                    logger.log(f'  Skipping image "{image_file}" file "{image_source}" does not exist')
 
                         # Add the video
                         if (video_file := games.find("AndroidGameplayScreenshotPath")) is not None:
@@ -260,13 +288,13 @@ for lb_xml_file in lb_xml_files:
                                     shutil.move(video_source, video_target)
                                     ET.SubElement(newGame, "video").text = f'./{short_video_path}'
                                 else:
-                                    logger.log(f'  Skipping image {video_file} file {video_source} does not exist')
+                                    logger.log(f'  Skipping image "{video_file}" file "{video_source}" does not exist')
                     else:
-                        logger.log(f'  Skipping {rom_name} entry, already in gamelist.xml')
+                        logger.log(f'  Skipping "{rom_name}" entry, already in gamelist.xml')
                 else:
-                    logger.log(f'  Skipping {rom_name} source file {rom_source_full_path} does not exist')
+                    logger.log(f'  Skipping "{rom_name}" source file "{rom_source_full_path}" does not exist')
             else:
-                logger.log(f'  Skipping {rom_name}, game already exits')
+                logger.log(f'  Skipping "{rom_name}", game already exits')
 
         if writefile:
             logger.log("  Writing new gamelist.xml")

@@ -45,6 +45,8 @@ Place `klbi.*` in your `/roms/ports/` folder, generate the `LaunchBox` folder wi
 Logfile will be created on the device in: `/tmp/logs/klbi.log`
 
 # Changelog
+**2022-02-05**: Add Scrap-As-Fallback if system is unknown, clean-up
+
 **2022-01-23**: Add video-support, add logging to stdout, bug-fixing
 
 **2022-01-15**: Initial release
