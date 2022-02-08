@@ -14,11 +14,11 @@ This script allows you to import these files to your Linux device running a cust
 
 # Easy Usage
 ## On the device
-* Connect the device to your Windows PC using SMP (`//351elec`) and chose the `rom` folder
+* Connect the device to your Windows PC using SMP (`//351elec`) and choose the `rom` folder
 * Place the `klbi.py` and `klbi.sh` scripts in the Ports folder of your device
 
 ## On Windows running LaunchBox
-* Select the ROMs you want to export (for convenience, you can create a playlist for this). You can chose ROMs for multiple systems at once if you like.
+* Select the ROMs you want to export (for convenience, you can create a playlist for this). You can choose ROMs for multiple systems at once if you like.
 * Highlight all the ROMs you want to export
 * Chose
   * *Tools*
@@ -45,6 +45,8 @@ Place `klbi.*` in your `/roms/ports/` folder, generate the `LaunchBox` folder wi
 Logfile will be created on the device in: `/tmp/logs/klbi.log`
 
 # Changelog
+**2022-02-08**: Convert more metadata (rating, number of players and release date)
+
 **2022-02-05**: Add Scrap-As-Fallback if system is unknown, clean-up
 
 **2022-01-23**: Add video-support, add logging to stdout, bug-fixing

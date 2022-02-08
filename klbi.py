@@ -102,15 +102,19 @@ config["debug"].update({
     'log_path' : '/tmp/klbi/logs',
     })
 
+# SourceXML : {'target' : TargetXML, 'func' : Lambda Function for conversion (or None if same value can be used) }
 metadata_dict = {
-    'Title' : 'name',
-    'Notes' : 'desc',
-    'Favorite' : 'favorite',
-    'Developer' : 'developer',
-    'Publisher' : 'publisher',
-    'Genre' : 'genre',
-    'PlayCount' : 'playcount',
-    'PlayTime' : 'gametime',
+    'CommunityStarRating' : {'target' : 'rating', 'func' : lambda x : str(float(x)/5) },
+    'Developer' : {'target' : 'developer', 'func' : None },
+    'Favorite' : {'target' : 'favorite', 'func' : None },
+    'Genre' : {'target' : 'genre', 'func' : None },
+    'MaxPlayers' : {'target' : 'players', 'func' : None },
+    'Notes' : {'target' : 'desc', 'func' : None },
+    'PlayCount' : {'target' : 'playcount', 'func' : None },
+    'PlayTime' : {'target' : 'gametime', 'func' : None },
+    'Publisher' : {'target' : 'publisher', 'func' : None },
+    'ReleaseDate' : {'target' : 'releasedate', 'func' : lambda x : x.replace('-', '').split('T')[0] },
+    'Title' : {'target' : 'name', 'func' : None },
 }
 
 # Guess the device we are running on
@@ -243,9 +247,12 @@ for lb_xml_file in lb_xml_files:
                         # Add new Game to xml
                         newGame = ET.SubElement(es_root, "game")
 
-                        # Convert Standard Metadata
+                        # Convert Metadata
                         for source in metadata_dict:
-                            ET.SubElement(newGame, metadata_dict[source]).text = games.find(source).text
+                            if value := games.find(source).text:
+                                if metadata_dict[source]["func"] is not None:
+                                    value = metadata_dict[source]["func"](value)
+                                ET.SubElement(newGame, metadata_dict[source]["target"]).text = value
 
                         # Add the Game to the gamelist.xml
                         ET.SubElement(newGame, "path").text = f'./{rom_name}'
