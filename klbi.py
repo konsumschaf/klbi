@@ -96,10 +96,11 @@ config = {
         'WonderSwan' : 'wonderswan',
     },
 }
-config["debug"] = config["351elec"] | {
+config["debug"] = config["351elec"].copy()
+config["debug"].update({
     'rom_path' : '/tmp/klbi',
     'log_path' : '/tmp/klbi/logs',
-}
+    })
 
 # (SourceXML, TargetXML, Lambda Function for conversion (or None if same value can be used))
 metadata = [
