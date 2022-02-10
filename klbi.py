@@ -96,26 +96,25 @@ config = {
         'WonderSwan' : 'wonderswan',
     },
 }
-config["debug"] = config["351elec"].copy()
-config["debug"].update({
+config["debug"] = config["351elec"] | {
     'rom_path' : '/tmp/klbi',
     'log_path' : '/tmp/klbi/logs',
-    })
-
-# SourceXML : {'target' : TargetXML, 'func' : Lambda Function for conversion (or None if same value can be used) }
-metadata_dict = {
-    'CommunityStarRating' : {'target' : 'rating', 'func' : lambda x : str(float(x)/5) },
-    'Developer' : {'target' : 'developer', 'func' : None },
-    'Favorite' : {'target' : 'favorite', 'func' : None },
-    'Genre' : {'target' : 'genre', 'func' : None },
-    'MaxPlayers' : {'target' : 'players', 'func' : None },
-    'Notes' : {'target' : 'desc', 'func' : None },
-    'PlayCount' : {'target' : 'playcount', 'func' : None },
-    'PlayTime' : {'target' : 'gametime', 'func' : None },
-    'Publisher' : {'target' : 'publisher', 'func' : None },
-    'ReleaseDate' : {'target' : 'releasedate', 'func' : lambda x : x.replace('-', '').split('T')[0] },
-    'Title' : {'target' : 'name', 'func' : None },
 }
+
+# (SourceXML, TargetXML, Lambda Function for conversion (or None if same value can be used))
+metadata = [
+    ('CommunityStarRating', 'rating', lambda x : str(float(x)/5)),
+    ('Developer', 'developer', None),
+    ('Favorite', 'favorite', None),
+    ('Genre', 'genre', None),
+    ('MaxPlayers', 'players', None),
+    ('Notes', 'desc', None),
+    ('PlayCount', 'playcount', None),
+    ('PlayTime', 'gametime', None),
+    ('Publisher', 'publisher', None),
+    ('ReleaseDate', 'releasedate', lambda x : x.replace('-', '').split('T')[0]),
+    ('Title', 'name', None),
+]
 
 # Guess the device we are running on
 def get_os():
@@ -175,23 +174,25 @@ def indent(elem, level=0):
 current_os = get_os()
 os_config = config[current_os]
 
+rom_path = os_config['rom_path']
+
 # Open the logfile
 logger = Logger(dir = os_config['log_path'], file = os_config['log_file'])
 
 logger.log(f'OS: {current_os}')
 
-if not os.path.exists(f'{os_config["rom_path"]}/LaunchBox'):
+if not os.path.exists(f'{rom_path}/LaunchBox'):
     logger.log("No LaunchBox folder found, aborting")
     exit(1)
 
 # Get all the systems
-lb_xml_files = os.listdir(f'{os_config["rom_path"]}/LaunchBox/Data/Platforms/')
+lb_xml_files = os.listdir(f'{rom_path}/LaunchBox/Data/Platforms/')
 
 for lb_xml_file in lb_xml_files:
     writefile = False
     if pathlib.Path(lb_xml_file).suffix == '.xml':
         # open LaunchBox xml file
-        lb_tree = ET.parse(f'{os_config["rom_path"]}/LaunchBox/Data/Platforms/{lb_xml_file}')
+        lb_tree = ET.parse(f'{rom_path}/LaunchBox/Data/Platforms/{lb_xml_file}')
         lb_root = lb_tree.getroot()
 
         system = lb_root.find("./Platform/Name").text
@@ -209,7 +210,7 @@ for lb_xml_file in lb_xml_files:
                 logger.log(f'  Known Scrape-As-System: "{scrape_as}" found, use it as system')
 
         # Open systems gamelist.xml or create one if missing
-        gamelist_path = f'{os_config["rom_path"]}/{os_config[system]}/gamelist.xml'
+        gamelist_path = f'{rom_path}/{os_config[system]}/gamelist.xml'
         if os.path.exists(gamelist_path):
             es_tree = ET.parse(gamelist_path)
             es_root = es_tree.getroot()
@@ -227,10 +228,10 @@ for lb_xml_file in lb_xml_files:
             rom_source_path = games.find("ApplicationPath").text
             rom_name = os.path.basename(rom_source_path)
             rom_stem = pathlib.Path(rom_name).stem
-            rom_source_full_path = f'{os_config["rom_path"]}/LaunchBox/{rom_source_path}'
+            rom_source_full_path = f'{rom_path}/LaunchBox/{rom_source_path}'
 
             # Check if this ROM is already on the system
-            rom_full_target_path = f'{os_config["rom_path"]}/{os_config[system]}/{rom_name}'
+            rom_full_target_path = f'{rom_path}/{os_config[system]}/{rom_name}'
             if not os.path.exists(rom_full_target_path):
                 # Check if the source file exists
                 if os.path.exists(rom_source_full_path):
@@ -248,11 +249,11 @@ for lb_xml_file in lb_xml_files:
                         newGame = ET.SubElement(es_root, "game")
 
                         # Convert Metadata
-                        for source in metadata_dict:
+                        for (source, target, func) in metadata:
                             if value := games.find(source).text:
-                                if metadata_dict[source]["func"] is not None:
-                                    value = metadata_dict[source]["func"](value)
-                                ET.SubElement(newGame, metadata_dict[source]["target"]).text = value
+                                if func is not None:
+                                    value = func(value)
+                                ET.SubElement(newGame, target).text = value
 
                         # Add the Game to the gamelist.xml
                         ET.SubElement(newGame, "path").text = f'./{rom_name}'
@@ -270,8 +271,8 @@ for lb_xml_file in lb_xml_files:
                                 image_file = image_file.text
                                 image_extension = pathlib.Path(image_file).suffix
                                 short_image_path = f'images/{rom_stem}-{image_dict[source_xml]["target_suffix"]}{image_extension}'
-                                image_source = f'{os_config["rom_path"]}/LaunchBox/{image_file}'
-                                image_target = f'{os_config["rom_path"]}/{os_config[system]}/{short_image_path}'
+                                image_source = f'{rom_path}/LaunchBox/{image_file}'
+                                image_target = f'{rom_path}/{os_config[system]}/{short_image_path}'
                                 # if the image folder does not exist, create it
                                 os.makedirs(os.path.dirname(image_target), exist_ok=True)
                                 if os.path.exists(image_source):
@@ -287,8 +288,8 @@ for lb_xml_file in lb_xml_files:
                             if pathlib.PurePath(video_file).parts[0] == 'Videos':
                                 video_extension = pathlib.Path(video_file).suffix
                                 short_video_path = f'videos/{rom_stem}-video{video_extension}'
-                                video_source = f'{os_config["rom_path"]}/LaunchBox/{video_file}'
-                                video_target = f'{os_config["rom_path"]}/{os_config[system]}/{short_video_path}'
+                                video_source = f'{rom_path}/LaunchBox/{video_file}'
+                                video_target = f'{rom_path}/{os_config[system]}/{short_video_path}'
                                 # if the video folder does not exist, create it
                                 os.makedirs(os.path.dirname(video_target), exist_ok=True)
                                 if os.path.exists(video_source):
@@ -316,4 +317,4 @@ for lb_xml_file in lb_xml_files:
 
 # Cleaning up
 logger.log("Removing LaunchBox folder")
-shutil.rmtree(f'{os_config["rom_path"]}/LaunchBox')
+shutil.rmtree(f'{rom_path}/LaunchBox')
