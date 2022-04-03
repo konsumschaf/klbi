@@ -45,9 +45,9 @@ Place `klbi.*` in your `/roms/ports/` folder, generate the `LaunchBox` folder wi
 Logfile will be created on the device in: `/tmp/logs/klbi.log`
 
 # Changelog
-**2022-04-03**: Add Support for LastPlayedDate and changed 351elec to AmberELEC
+**2022-04-03**: Add Support for LastPlayedDate and changed 351elec to AmberELEC, clean-up code
 
-**2022-02-09**: Clean up code
+**2022-02-09**: Clean-up code
 
 **2022-02-08**: Convert more metadata (rating, number of players and release date)
 

@@ -262,25 +262,27 @@ for lb_xml_file in lb_xml_files:
                         ET.SubElement(newGame, "path").text = f'./{rom_name}'
 
                         # Add the images
-                        image_dict = {
-                            'AndroidBoxFrontFullPath' : {'target_xml' : 'image', 'target_suffix' : 'image'},
-                            'AndroidBoxFrontThumbPath' : {'target_xml' : 'thumbnail', 'target_suffix' : 'thumb'},
-                            'AndroidBackgroundPath' : {'target_xml' : 'boxback', 'target_suffix' : 'boxback'},
-                            'AndroidGameTitleScreenshotPath' : {'target_xml' : 'titleshot', 'target_suffix' : 'titleshot'},
-                            'AndroidClearLogoFullPath' : {'target_xml' : 'marquee', 'target_suffix' : 'marquee'}
-                        }
-                        for source_xml in image_dict:
+
+                        # (SourceXML, TargetXML, Target-Suffix)
+                        imagemetadata= [
+                            ('AndroidBoxFrontFullPath', 'image', 'image'),
+                            ('AndroidBoxFrontThumbPath', 'thumbnail', 'thumb'),
+                            ('AndroidBackgroundPath', 'boxback', 'boxback'),
+                            ('AndroidGameTitleScreenshotPath', 'titleshot', 'titleshot'),
+                            ('AndroidClearLogoFullPath', 'marquee', 'marquee')
+                        ]
+                        for (source_xml, target_xml, target_suffix) in imagemetadata:
                             if (image_file := games.find(source_xml)) is not None:
                                 image_file = image_file.text
                                 image_extension = pathlib.Path(image_file).suffix
-                                short_image_path = f'images/{rom_stem}-{image_dict[source_xml]["target_suffix"]}{image_extension}'
+                                short_image_path = f'images/{rom_stem}-{target_suffix}{image_extension}'
                                 image_source = f'{rom_path}/LaunchBox/{image_file}'
                                 image_target = f'{rom_path}/{os_config[system]}/{short_image_path}'
                                 # if the image folder does not exist, create it
                                 os.makedirs(os.path.dirname(image_target), exist_ok=True)
                                 if os.path.exists(image_source):
                                     shutil.move(image_source, image_target)
-                                    ET.SubElement(newGame, image_dict[source_xml]["target_xml"]).text = f'./{short_image_path}'
+                                    ET.SubElement(newGame, target_xml).text = f'./{short_image_path}'
                                 else:
                                     logger.log(f'  Skipping image "{image_file}" file "{image_source}" does not exist')
 
