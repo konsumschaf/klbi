@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET
 # Config for the different target systems
 # needs path to the ROMs-Folder and the folder names
 config = {
-    '351elec' : {
+    'AmberELEC' : {
         'rom_path' : '/roms',
         'log_path' : '/tmp/logs',
         'log_file' : 'klib.log',
@@ -96,7 +96,7 @@ config = {
         'WonderSwan' : 'wonderswan',
     },
 }
-config["debug"] = config["351elec"].copy()
+config["debug"] = config["AmberELEC"].copy()
 config["debug"].update({
     'rom_path' : '/tmp/klbi',
     'log_path' : '/tmp/klbi/logs',
@@ -108,6 +108,7 @@ metadata = [
     ('Developer', 'developer', None),
     ('Favorite', 'favorite', None),
     ('Genre', 'genre', None),
+    ('LastPlayedDate', 'lastplayed', lambda x : x.replace('-','').replace(':','').split('.')[0]),
     ('MaxPlayers', 'players', None),
     ('Notes', 'desc', None),
     ('PlayCount', 'playcount', None),
@@ -121,13 +122,13 @@ metadata = [
 def get_os():
     # set "debug" as default
     current_os = "debug"
-    # 351elec
+    # 351elec / AmberELEC
     os_config_file = '/etc/os-release'
     if os.path.isfile(os_config_file):
         with open(os_config_file, encoding="utf-8") as f:
             name = f.readline().strip()
-            if name == 'NAME="351ELEC"':
-                current_os = "351elec"
+            if name == 'NAME="351ELEC"' or name == 'NAME="AmberELEC"':
+                current_os = "AmberELEC"
 
     return current_os
 
@@ -251,7 +252,8 @@ for lb_xml_file in lb_xml_files:
 
                         # Convert Metadata
                         for (source, target, func) in metadata:
-                            if value := games.find(source).text:
+                            if (value := games.find(source)) is not None:
+                                value = value.text
                                 if func is not None:
                                     value = func(value)
                                 ET.SubElement(newGame, target).text = value

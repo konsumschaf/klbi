@@ -6,15 +6,15 @@ Script that imports the LaunchBox export folder into RetroArch consoles.
 This script allows you to import these files to your Linux device running a custom firmware with EmulationStation.
 
 # Supported Firmwares
-* [351ELEC](https://351elec.de)
+* [AmberELEC](https://amberelec.org) (formally known as 351elec)
 
 # Limitations
-* Right now it's only tested with 351ELEC.
+* Right now it's only tested with AmberELEC.
 * If the ROM is missing on the device, but there are already some entrys in the gamelist.xml, only the ROM wil be moved. But the images and videos will not (hard to tell, what to do with the orphaned entry). You can clean up the old gamelist.xml first by entering Emulationstation *Main Menu* -> *System Settings* -> *Developer* -> **Clean Gamelists & Remove unused Media**.
 
 # Easy Usage
 ## On the device
-* Connect the device to your Windows PC using SMP (`//351elec`) and choose the `rom` folder
+* Connect the device to your Windows PC using SMP (`//AmberELEC`) and choose the `rom` folder
 * Place the `klbi.py` and `klbi.sh` scripts in the Ports folder of your device
 
 ## On Windows running LaunchBox
@@ -45,6 +45,8 @@ Place `klbi.*` in your `/roms/ports/` folder, generate the `LaunchBox` folder wi
 Logfile will be created on the device in: `/tmp/logs/klbi.log`
 
 # Changelog
+**2022-04-03**: Add Support for LastPlayedDate and changed 351elec to AmberELEC
+
 **2022-02-09**: Clean up code
 
 **2022-02-08**: Convert more metadata (rating, number of players and release date)
