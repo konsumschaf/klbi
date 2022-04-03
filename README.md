@@ -6,7 +6,7 @@ Script that imports the LaunchBox export folder into RetroArch consoles.
 This script allows you to import these files to your Linux device running a custom firmware with EmulationStation.
 
 # Supported Firmwares
-* [AmberELEC](https://amberelec.org) (formally known as 351elec)
+* [AmberELEC](https://amberelec.org) (formerly known as 351elec)
 
 # Limitations
 * Right now it's only tested with AmberELEC.
