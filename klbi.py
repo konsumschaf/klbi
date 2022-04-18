@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-#
+
 # Konsumschaf's LaunchBox Importer
-#
+# Copyright (C) 2021-present konsumschaf (https://github.com/konsumschaf)
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 
 from dataclasses import dataclass
 import os
