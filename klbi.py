@@ -85,6 +85,7 @@ config = {
         'Sinclair ZX Spectrum' : 'zxspectrum',
         'Sinclair ZX-81' : 'zx81',
         'SNK Neo Geo CD' : 'neocd',
+        'SNK Neo Geo AES' : 'neogeo',
         'SNK Neo Geo MVS' : 'neogeo',
         'SNK Neo Geo Pocket Color' : 'ngpc',
         'SNK Neo Geo Pocket' : 'ngp',
@@ -205,7 +206,13 @@ for lb_xml_file in lb_xml_files:
         # Check if system is known
         if system not in os_config:
             logger.log(f'  Unknown system "{system}", trying Scrap-As-Fallback')
-            scrape_as = lb_root.find("./Platform/ScrapeAs").text
+
+            if(scrape_as := lb_root.find("./Platform/ScrapeAs")) is None:
+                logger.log(f'  No Scrape-As-System found, skipping')
+                continue
+            if (scrape_as := scrape_as.text) is None:
+                logger.log(f'  Scrape-As-System is empty, skipping')
+                continue
             if scrape_as not in os_config:
                 logger.log(f'  Scrape-As-System: "{scrape_as}" not found, skipping')
                 continue
