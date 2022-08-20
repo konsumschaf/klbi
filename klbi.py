@@ -17,7 +17,7 @@ config = {
     'AmberELEC' : {
         'rom_path' : '/roms',
         'log_path' : '/tmp/logs',
-        'log_file' : 'klib.log',
+        'log_file' : 'klbi.log',
         '3DO Interactive Multiplayer' : '3do',
         'Amstrad CPC' : 'amstradcpc',
         'Arcade' : 'arcade',
@@ -275,35 +275,35 @@ for lb_xml_file in lb_xml_files:
                         ]
                         for (source_xml, target_xml, target_suffix) in imagemetadata:
                             if (image_file := games.find(source_xml)) is not None:
-                                image_file = image_file.text
-                                image_extension = pathlib.Path(image_file).suffix
-                                short_image_path = f'images/{rom_stem}-{target_suffix}{image_extension}'
-                                image_source = f'{rom_path}/LaunchBox/{image_file}'
-                                image_target = f'{rom_path}/{os_config[system]}/{short_image_path}'
-                                # if the image folder does not exist, create it
-                                os.makedirs(os.path.dirname(image_target), exist_ok=True)
-                                if os.path.exists(image_source):
-                                    shutil.move(image_source, image_target)
-                                    ET.SubElement(newGame, target_xml).text = f'./{short_image_path}'
-                                else:
-                                    logger.log(f'  Skipping image "{image_file}" file "{image_source}" does not exist')
+                                if (image_file := image_file.text) is not None:
+                                    image_extension = pathlib.Path(image_file).suffix
+                                    short_image_path = f'images/{rom_stem}-{target_suffix}{image_extension}'
+                                    image_source = f'{rom_path}/LaunchBox/{image_file}'
+                                    image_target = f'{rom_path}/{os_config[system]}/{short_image_path}'
+                                    # if the image folder does not exist, create it
+                                    os.makedirs(os.path.dirname(image_target), exist_ok=True)
+                                    if os.path.exists(image_source):
+                                        shutil.move(image_source, image_target)
+                                        ET.SubElement(newGame, target_xml).text = f'./{short_image_path}'
+                                    else:
+                                        logger.log(f'  Skipping image "{image_file}" file "{image_source}" does not exist')
 
                         # Add the video
                         if (video_file := games.find("AndroidGameplayScreenshotPath")) is not None:
-                            video_file = video_file.text
-                            # Really a video?
-                            if pathlib.PurePath(video_file).parts[0] == 'Videos':
-                                video_extension = pathlib.Path(video_file).suffix
-                                short_video_path = f'videos/{rom_stem}-video{video_extension}'
-                                video_source = f'{rom_path}/LaunchBox/{video_file}'
-                                video_target = f'{rom_path}/{os_config[system]}/{short_video_path}'
-                                # if the video folder does not exist, create it
-                                os.makedirs(os.path.dirname(video_target), exist_ok=True)
-                                if os.path.exists(video_source):
-                                    shutil.move(video_source, video_target)
-                                    ET.SubElement(newGame, "video").text = f'./{short_video_path}'
-                                else:
-                                    logger.log(f'  Skipping image "{video_file}" file "{video_source}" does not exist')
+                            if (video_file := video_file.text) is not None:
+                                # Really a video?
+                                if pathlib.PurePath(video_file).parts[0] == 'Videos':
+                                    video_extension = pathlib.Path(video_file).suffix
+                                    short_video_path = f'videos/{rom_stem}-video{video_extension}'
+                                    video_source = f'{rom_path}/LaunchBox/{video_file}'
+                                    video_target = f'{rom_path}/{os_config[system]}/{short_video_path}'
+                                    # if the video folder does not exist, create it
+                                    os.makedirs(os.path.dirname(video_target), exist_ok=True)
+                                    if os.path.exists(video_source):
+                                        shutil.move(video_source, video_target)
+                                        ET.SubElement(newGame, "video").text = f'./{short_video_path}'
+                                    else:
+                                        logger.log(f'  Skipping image "{video_file}" file "{video_source}" does not exist')
                     else:
                         logger.log(f'  Skipping "{rom_name}" entry, already in gamelist.xml')
                 else:
